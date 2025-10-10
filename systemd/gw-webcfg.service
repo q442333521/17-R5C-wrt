@@ -1,0 +1,22 @@
+[Unit]
+Description=Gateway Web Configuration Interface
+After=network.target gw-rs485d.service
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/gw/bin/webcfg /opt/gw/conf/config.json
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# 资源限制
+LimitNOFILE=1024
+
+# 安全
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,32 @@
+[Unit]
+Description=Gateway RS485 Data Acquisition Daemon
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/gw/bin/rs485d /opt/gw/conf/config.json
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# 实时性优化
+CPUAffinity=0
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=90
+Nice=-20
+IOSchedulingClass=realtime
+IOSchedulingPriority=0
+
+# 资源限制
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+LimitNOFILE=65536
+
+# 安全
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

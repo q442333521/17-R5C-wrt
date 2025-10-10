@@ -1,0 +1,26 @@
+[Unit]
+Description=Gateway Modbus TCP Server Daemon
+After=network.target gw-rs485d.service
+Requires=gw-rs485d.service
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/gw/bin/modbusd /opt/gw/conf/config.json
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# CPU 亲和性
+CPUAffinity=1
+
+# 资源限制
+LimitNOFILE=65536
+
+# 安全
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
