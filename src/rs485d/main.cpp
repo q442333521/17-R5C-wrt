@@ -32,6 +32,9 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cstring>
+#include <random>
+#include <cmath>
+#include <cstdlib>
 
 /// @brief 全局运行标志，用于优雅退出
 /// @note volatile sig_atomic_t 保证信号处理器的线程安全
@@ -82,8 +85,15 @@ public:
      * @param device 串口设备路径（如 "/dev/ttyUSB0"）
      * @param baudrate 波特率（9600/19200/38400/57600/115200）
      */
-    RS485Handler(const std::string& device, int baudrate)
-        : device_(device), baudrate_(baudrate), fd_(-1) {
+    RS485Handler(const std::string& device, int baudrate, bool simulate)
+        : device_(device),
+          baudrate_(baudrate),
+          fd_(-1),
+          simulate_(simulate ||
+                    device == "SIMULATED" ||
+                    device == "simulated" ||
+                    device.rfind("sim://", 0) == 0),
+          sim_start_(std::chrono::steady_clock::now()) {
     }
     
     /**
@@ -111,6 +121,11 @@ public:
      * @note 失败时会输出详细的错误日志
      */
     bool open() {
+        if (simulate_) {
+            LOG_INFO("RS485 模拟模式已启用，跳过串口设备打开");
+            return true;
+        }
+        
         // 打开串口设备
         // O_RDWR: 读写模式
         // O_NOCTTY: 不将设备设为控制终端
@@ -180,6 +195,8 @@ public:
             ::close(fd_);
             fd_ = -1;
             LOG_INFO("串口已关闭");
+        } else if (simulate_) {
+            LOG_INFO("模拟串口已关闭");
         }
     }
     
@@ -205,6 +222,10 @@ public:
      */
     bool query_thickness(float& thickness) {
         if (fd_ < 0) {
+            if (simulate_) {
+                thickness = generate_simulated_thickness();
+                return true;
+            }
             return false;
         }
         
@@ -288,13 +309,25 @@ public:
      * @return bool true=已打开, false=未打开
      */
     bool is_open() const {
-        return fd_ >= 0;
+        return simulate_ || fd_ >= 0;
     }
     
 private:
+    float generate_simulated_thickness() {
+        using clock = std::chrono::steady_clock;
+        const auto elapsed = std::chrono::duration<float>(clock::now() - sim_start_).count();
+        // 生成平滑的波动厚度值，并叠加轻微噪声
+        float base = 1.5f + 0.2f * std::sin(elapsed * 0.4f);
+        float ripple = 0.05f * std::sin(elapsed * 3.2f);
+        float noise = 0.01f * std::sin(elapsed * 12.7f);
+        return base + ripple + noise;
+    }
+
     std::string device_;    ///< 串口设备路径
     int baudrate_;          ///< 波特率
     int fd_;                ///< 文件描述符
+    bool simulate_;         ///< 是否启用模拟模式
+    std::chrono::steady_clock::time_point sim_start_; ///< 模拟起始时间
 };
 
 /**
@@ -354,6 +387,7 @@ int main(int argc, char* argv[]) {
              rs485_cfg.poll_rate_ms, 1000.0f / rs485_cfg.poll_rate_ms);
     LOG_INFO("  超时时间:   %d ms", rs485_cfg.timeout_ms);
     LOG_INFO("  重试次数:   %d", rs485_cfg.retry_count);
+    LOG_INFO("  模拟模式:   %s", rs485_cfg.simulate ? "启用" : "关闭");
     
     // 创建共享内存（生产者模式）
     LOG_INFO("创建共享内存...");
@@ -373,7 +407,7 @@ int main(int argc, char* argv[]) {
     
     // 打开串口设备
     LOG_INFO("打开串口设备...");
-    RS485Handler rs485(rs485_cfg.device, rs485_cfg.baudrate);
+    RS485Handler rs485(rs485_cfg.device, rs485_cfg.baudrate, rs485_cfg.simulate);
     if (!rs485.open()) {
         LOG_FATAL("串口设备打开失败！");
         LOG_FATAL("请检查:");

@@ -185,6 +185,7 @@ ConfigManager::RS485Config ConfigManager::get_rs485_config() const {
     cfg.poll_rate_ms = get_int("rs485.poll_rate_ms", 20);
     cfg.timeout_ms = get_int("rs485.timeout_ms", 200);
     cfg.retry_count = get_int("rs485.retry_count", 3);
+    cfg.simulate = get_bool("rs485.simulate", false);
     return cfg;
 }
 
@@ -229,6 +230,7 @@ Json::Value ConfigManager::get_default_config() const {
     root["rs485"]["poll_rate_ms"] = 20;
     root["rs485"]["timeout_ms"] = 200;
     root["rs485"]["retry_count"] = 3;
+    root["rs485"]["simulate"] = false;
     
     // 协议配置
     root["protocol"]["active"] = "modbus";

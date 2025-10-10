@@ -212,6 +212,7 @@ public:
         int poll_rate_ms = 20;                 ///< 采样周期（毫秒）
         int timeout_ms = 200;                  ///< 超时时间（毫秒）
         int retry_count = 3;                   ///< 重试次数
+        bool simulate = false;                 ///< 是否启用模拟模式
     };
     
     /**

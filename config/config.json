@@ -13,7 +13,8 @@
     "baudrate": 19200,
     "poll_rate_ms": 20,
     "timeout_ms": 200,
-    "retry_count": 3
+    "retry_count": 3,
+    "simulate": false
   },
   "protocol": {
     "active": "modbus",

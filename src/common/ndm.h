@@ -19,6 +19,7 @@
 #define GATEWAY_NDM_H
 
 #include <cstdint>
+#include <cstddef>
 #include <ctime>
 
 /**

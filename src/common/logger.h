@@ -51,12 +51,12 @@ public:
      * @brief 日志级别枚举
      */
     enum Level {
-        TRACE = LOG_DEBUG,      ///< 跟踪级别（最详细）
-        DEBUG = LOG_DEBUG,      ///< 调试级别
-        INFO = LOG_INFO,        ///< 信息级别
-        WARN = LOG_WARNING,     ///< 警告级别
-        ERROR = LOG_ERR,        ///< 错误级别
-        FATAL = LOG_CRIT        ///< 致命错误级别
+        TRACE = 0,              ///< 跟踪级别（最详细）
+        DEBUG,                  ///< 调试级别
+        INFO,                   ///< 信息级别
+        WARN,                   ///< 警告级别
+        ERROR,                  ///< 错误级别
+        FATAL                   ///< 致命错误级别
     };
     
     /**
@@ -142,6 +142,18 @@ private:
         return inst;
     }
     
+    static constexpr int to_syslog_priority(Level level) {
+        switch (level) {
+            case TRACE: return LOG_DEBUG;
+            case DEBUG: return LOG_DEBUG;
+            case INFO:  return LOG_INFO;
+            case WARN:  return LOG_WARNING;
+            case ERROR: return LOG_ERR;
+            case FATAL: return LOG_CRIT;
+        }
+        return LOG_DEBUG;
+    }
+
     std::string name_;      ///< 程序名称
     bool use_syslog_ = false; ///< 是否使用 syslog
 };
@@ -149,6 +161,22 @@ private:
 // ============================================================================
 // 便捷宏定义
 // ============================================================================
+
+#ifdef LOG_DEBUG
+#undef LOG_DEBUG
+#endif
+#ifdef LOG_INFO
+#undef LOG_INFO
+#endif
+#ifdef LOG_WARNING
+#undef LOG_WARNING
+#endif
+#ifdef LOG_ERR
+#undef LOG_ERR
+#endif
+#ifdef LOG_CRIT
+#undef LOG_CRIT
+#endif
 
 /**
  * @def LOG_TRACE(format, ...)

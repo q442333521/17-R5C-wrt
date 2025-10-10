@@ -8,17 +8,11 @@ static const char* level_strings[] = {
 };
 
 static const char* level_to_string(Logger::Level level) {
-    if (level == Logger::TRACE) {
-        return level_strings[0];
+    const int index = static_cast<int>(level);
+    if (index >= 0 && index < 6) {
+        return level_strings[index];
     }
-    switch (level) {
-        case Logger::DEBUG: return level_strings[1];
-        case Logger::INFO:  return level_strings[2];
-        case Logger::WARN:  return level_strings[3];
-        case Logger::ERROR: return level_strings[4];
-        case Logger::FATAL: return level_strings[5];
-        default: return "UNKNOWN";
-    }
+    return "UNKNOWN";
 }
 
 void Logger::log(Level level, const char* format, ...) {
@@ -27,7 +21,7 @@ void Logger::log(Level level, const char* format, ...) {
     
     if (instance().use_syslog_) {
         // 输出到 syslog
-        vsyslog(level, format, args);
+        vsyslog(Logger::to_syslog_priority(level), format, args);
     } else {
         // 输出到控制台
         // 获取当前时间
@@ -57,7 +51,7 @@ void Logger::trace(const char* format, ...) {
     va_start(args, format);
     
     if (instance().use_syslog_) {
-        vsyslog(TRACE, format, args);
+        vsyslog(Logger::to_syslog_priority(Logger::TRACE), format, args);
     } else {
         time_t now = time(nullptr);
         struct tm tm_info;
@@ -77,7 +71,7 @@ void Logger::debug(const char* format, ...) {
     va_start(args, format);
     
     if (instance().use_syslog_) {
-        vsyslog(DEBUG, format, args);
+        vsyslog(Logger::to_syslog_priority(Logger::DEBUG), format, args);
     } else {
         time_t now = time(nullptr);
         struct tm tm_info;
@@ -97,7 +91,7 @@ void Logger::info(const char* format, ...) {
     va_start(args, format);
     
     if (instance().use_syslog_) {
-        vsyslog(INFO, format, args);
+        vsyslog(Logger::to_syslog_priority(Logger::INFO), format, args);
     } else {
         time_t now = time(nullptr);
         struct tm tm_info;
@@ -117,7 +111,7 @@ void Logger::warn(const char* format, ...) {
     va_start(args, format);
     
     if (instance().use_syslog_) {
-        vsyslog(WARN, format, args);
+        vsyslog(Logger::to_syslog_priority(Logger::WARN), format, args);
     } else {
         time_t now = time(nullptr);
         struct tm tm_info;
@@ -137,7 +131,7 @@ void Logger::error(const char* format, ...) {
     va_start(args, format);
     
     if (instance().use_syslog_) {
-        vsyslog(ERROR, format, args);
+        vsyslog(Logger::to_syslog_priority(Logger::ERROR), format, args);
     } else {
         time_t now = time(nullptr);
         struct tm tm_info;
@@ -157,7 +151,7 @@ void Logger::fatal(const char* format, ...) {
     va_start(args, format);
     
     if (instance().use_syslog_) {
-        vsyslog(FATAL, format, args);
+        vsyslog(Logger::to_syslog_priority(Logger::FATAL), format, args);
     } else {
         time_t now = time(nullptr);
         struct tm tm_info;
