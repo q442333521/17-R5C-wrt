@@ -8,8 +8,10 @@ static const char* level_strings[] = {
 };
 
 static const char* level_to_string(Logger::Level level) {
+    if (level == Logger::TRACE) {
+        return level_strings[0];
+    }
     switch (level) {
-        case Logger::TRACE: return level_strings[0];
         case Logger::DEBUG: return level_strings[1];
         case Logger::INFO:  return level_strings[2];
         case Logger::WARN:  return level_strings[3];

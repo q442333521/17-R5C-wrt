@@ -230,7 +230,7 @@ private:
 };
 
 // 嵌入式 HTML 页面（简化版）
-const char* index_html = R"(
+const char* index_html = R"HTML(
 <!DOCTYPE html>
 <html>
 <head>
@@ -391,7 +391,7 @@ const char* index_html = R"(
     </script>
 </body>
 </html>
-)";
+)HTML";
 
 /**
  * Web Config Daemon Main Function
