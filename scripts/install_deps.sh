@@ -4,15 +4,19 @@
 # 用于在 Ubuntu 22.04 ARM64 上安装 S7 和 OPC UA 库
 # 
 # 更新日期: 2025-10-11
-# 版本: 2.2 (修复 open62541 PPA 404 错误)
+# 版本: 2.3 (使用专用编译脚本)
 # 
 # 主要修改:
 # - 修复 open62541-team/ppa 在 Ubuntu 22.04 不可用的问题
-# - 对于 Ubuntu 22.04，直接使用源码编译 open62541
+# - 使用专用的 build_open62541.sh 脚本编译 open62541
 # - 添加了 PPA 清理功能
+# - 模块化设计，更易维护
 # =============================================================================
 
 set -e  # 遇到错误立即退出
+
+# 获取脚本所在目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "========================================="
 echo "安装 S7 和 OPC UA 依赖库 (ARM64版)"
@@ -46,7 +50,7 @@ echo ""
 # =============================================================================
 # 清理可能存在的有问题的 PPA 源
 # =============================================================================
-echo "[0/5] 清理有问题的 PPA 源..."
+echo "[0/4] 清理有问题的 PPA 源..."
 
 # 清理 open62541-team PPA (Ubuntu 22.04 不支持)
 if [ -f /etc/apt/sources.list.d/open62541-team-ubuntu-ppa-${OS_VERSION}.list ]; then
@@ -66,12 +70,12 @@ echo "  ✅ PPA 清理完成"
 echo ""
 
 # 更新包列表
-echo "[1/5] 更新软件包列表..."
+echo "[1/4] 更新软件包列表..."
 apt update
 
 # 安装编译工具和基础依赖
 echo ""
-echo "[2/5] 安装编译工具和基础依赖..."
+echo "[2/4] 安装编译工具和基础依赖..."
 apt install -y \
     build-essential \
     cmake \
@@ -83,13 +87,14 @@ apt install -y \
     libjsoncpp-dev \
     software-properties-common \
     python3 \
-    python3-pip
+    python3-pip \
+    lsb-release
 
 # =============================================================================
 # 安装 Snap7 (西门子 S7 通信库)
 # =============================================================================
 echo ""
-echo "[3/5] 安装 Snap7 库..."
+echo "[3/4] 安装 Snap7 库..."
 
 # 方案 A: 使用 PPA (推荐,最简单)
 echo "  尝试从 PPA 安装..."
@@ -189,7 +194,7 @@ fi
 # 安装 open62541 (OPC UA 通信库)
 # =============================================================================
 echo ""
-echo "[4/5] 安装 open62541 库..."
+echo "[4/4] 安装 open62541 库..."
 
 # 检查 Ubuntu 版本，决定安装策略
 # open62541-team/ppa 只支持 Ubuntu 20.04 及以下，不支持 22.04 (jammy)
@@ -197,7 +202,7 @@ USE_SOURCE_BUILD=false
 
 if [[ "$OS_VERSION" == "jammy" ]] || [[ "$OS_VERSION_NUM" == "22.04" ]]; then
     echo "  检测到 Ubuntu 22.04 (jammy)，open62541-team/ppa 不支持此版本"
-    echo "  将直接从源码编译 open62541..."
+    echo "  将使用专用脚本从源码编译 open62541..."
     USE_SOURCE_BUILD=true
 elif [[ "$OS_VERSION" == "focal" ]] || [[ "$OS_VERSION_NUM" == "20.04" ]]; then
     echo "  检测到 Ubuntu 20.04 (focal)，尝试使用 PPA..."
@@ -226,76 +231,41 @@ if [ "$USE_SOURCE_BUILD" = false ]; then
     fi
 fi
 
-# 从源码编译 open62541
+# 使用专用脚本从源码编译 open62541
 if [ "$USE_SOURCE_BUILD" = true ]; then
-    echo "  开始从源码编译 open62541..."
-    
-    # 设置版本号（可以根据需要修改）
-    OPEN62541_VERSION="1.3.14"
-    OPEN62541_DIR="/tmp/open62541-$OPEN62541_VERSION"
-    
-    cd /tmp
-    
-    # 下载 open62541 源码
-    echo "  下载 open62541 $OPEN62541_VERSION 源码..."
-    if [ ! -f "v$OPEN62541_VERSION.tar.gz" ]; then
-        # 从 GitHub 下载指定版本
-        wget https://github.com/open62541/open62541/archive/refs/tags/v$OPEN62541_VERSION.tar.gz
-    fi
-    
-    # 解压源码
-    echo "  解压 open62541 源码..."
-    if [ -d "$OPEN62541_DIR" ]; then
-        rm -rf "$OPEN62541_DIR"
-    fi
-    tar -xzf v$OPEN62541_VERSION.tar.gz
-    
-    # 进入源码目录并创建构建目录
-    cd $OPEN62541_DIR
-    mkdir -p build
-    cd build
-    
-    # 配置 CMake 参数
-    echo "  配置 CMake 构建选项..."
-    echo "    - 编译类型: Release (优化版本)"
-    echo "    - 共享库: 启用"
-    echo "    - 命名空间: FULL (完整 OPC UA 功能)"
-    echo "    - 加密: 启用"
-    echo "    - 订阅: 启用"
-    echo "    - 方法调用: 启用"
-    
-    cmake -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=ON \
-          -DUA_ENABLE_AMALGAMATION=OFF \
-          -DUA_NAMESPACE_ZERO=FULL \
-          -DUA_ENABLE_ENCRYPTION=ON \
-          -DUA_ENABLE_SUBSCRIPTIONS=ON \
-          -DUA_ENABLE_METHODCALLS=ON \
-          -DUA_ENABLE_NODEMANAGEMENT=ON \
-          -DCMAKE_INSTALL_PREFIX=/usr/local \
-          ..
-    
-    # 编译（使用所有可用 CPU 核心）
-    CPU_CORES=$(nproc)
-    echo "  开始编译 open62541 (使用 $CPU_CORES 个 CPU 核心，这可能需要 5-15 分钟)..."
-    make -j$CPU_CORES
-    
-    # 安装到系统
-    echo "  安装 open62541 到 /usr/local..."
-    make install
-    
-    # 更新动态链接库缓存
-    echo "  更新动态链接库缓存..."
-    ldconfig
-    
-    echo "  ✅ open62541 已从源码成功编译并安装"
-    
-    # 显示安装信息
     echo ""
-    echo "  open62541 安装位置:"
-    echo "    库文件: /usr/local/lib/libopen62541.so"
-    echo "    头文件: /usr/local/include/open62541/"
-    echo "    CMake配置: /usr/local/lib/cmake/open62541/"
+    echo "  ==========================================  "
+    echo "  使用专用脚本编译 open62541"
+    echo "  =========================================="
+    echo ""
+    
+    # 检查专用编译脚本是否存在
+    BUILD_SCRIPT="$SCRIPT_DIR/build_open62541.sh"
+    
+    if [ ! -f "$BUILD_SCRIPT" ]; then
+        echo "  ❌ 错误: 找不到编译脚本 $BUILD_SCRIPT"
+        echo ""
+        echo "  请确保 build_open62541.sh 与此脚本在同一目录下"
+        exit 1
+    fi
+    
+    # 给脚本添加执行权限
+    chmod +x "$BUILD_SCRIPT"
+    
+    # 执行专用编译脚本 (使用 standard 配置 - 不含加密)
+    # 如果需要加密支持，可以改为: BUILD_CONFIG=full
+    echo "  调用专用编译脚本..."
+    export BUILD_CONFIG=standard
+    export CLEANUP_TEMP=1
+    
+    if bash "$BUILD_SCRIPT"; then
+        echo ""
+        echo "  ✅ open62541 编译安装成功"
+    else
+        echo ""
+        echo "  ❌ open62541 编译安装失败"
+        exit 1
+    fi
 fi
 
 # 验证安装
@@ -329,9 +299,9 @@ fi
 # 清理临时文件
 # =============================================================================
 echo ""
-echo "[5/5] 清理临时文件..."
+echo "清理临时文件..."
 cd /tmp
-rm -rf snap7-* open62541-* v*.tar.gz *.deb || true
+rm -rf snap7-* *.tar.gz *.deb 2>/dev/null || true
 echo "  ✅ 临时文件清理完成"
 
 # =============================================================================
@@ -408,9 +378,16 @@ echo "========================================="
 echo ""
 echo "已安装的库:"
 echo "  • Snap7 (西门子 S7 通信协议)"
-echo "  • open62541 (OPC UA 通信协议)"
+echo "  • open62541 (OPC UA 通信协议 - 标准配置)"
 echo "  • libmodbus (Modbus TCP/RTU 通信)"
 echo "  • libjsoncpp (JSON 数据解析)"
+echo ""
+echo "open62541 功能说明:"
+echo "  ✅ 完整 OPC UA 客户端/服务器"
+echo "  ✅ 订阅功能"
+echo "  ✅ 方法调用"
+echo "  ✅ 节点管理"
+echo "  ❌ 加密支持 (如需加密，使用 BUILD_CONFIG=full 重新安装)"
 echo ""
 echo "在 CMakeLists.txt 中使用方法:"
 echo ""
@@ -427,8 +404,8 @@ echo "  1. 配置项目: cd /path/to/project && mkdir build && cd build"
 echo "  2. 生成构建文件: cmake .."
 echo "  3. 编译项目: make -j$(nproc)"
 echo ""
-echo "如果遇到问题，请检查:"
-echo "  • CMake 能否找到库: pkg-config --list-all | grep open62541"
-echo "  • 库文件路径: ldconfig -p | grep 'open62541\\|snap7'"
-echo "  • 环境变量: echo \$PKG_CONFIG_PATH"
+echo "如果需要重新安装 open62541 的其他配置:"
+echo "  sudo BUILD_CONFIG=minimal $SCRIPT_DIR/build_open62541.sh  # 最小化"
+echo "  sudo BUILD_CONFIG=standard $SCRIPT_DIR/build_open62541.sh # 标准版 (当前)"
+echo "  sudo BUILD_CONFIG=full $SCRIPT_DIR/build_open62541.sh     # 完整版 (含加密)"
 echo ""
