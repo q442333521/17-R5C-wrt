@@ -1,0 +1,29 @@
+[Unit]
+Description=Gateway S7 PLC Client Daemon
+Documentation=https://github.com/your-repo/gateway
+After=network.target gw-rs485d.service
+Requires=gw-rs485d.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/gw
+ExecStart=/opt/gw/bin/s7d /opt/gw/conf/config.json
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/gw/conf /var/log/gateway /dev/shm
+
+[Install]
+WantedBy=multi-user.target
