@@ -11,7 +11,7 @@
   "rs485": {
     "device": "/dev/ttyUSB0",
     "baudrate": 19200,
-    "poll_rate_ms": 20,
+    "poll_rate_ms": 10,
     "timeout_ms": 200,
     "retry_count": 3,
     "simulate": false
@@ -21,7 +21,7 @@
     "modbus": {
       "enabled": true,
       "listen_ip": "0.0.0.0",
-      "port": 502,
+      "port": 1502,
       "slave_id": 1
     },
     "s7": {

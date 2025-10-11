@@ -172,6 +172,22 @@ public:
     bool empty() const {
         return size() == 0;
     }
+
+    /**
+     * @brief 查看最新一条数据而不移动读指针
+     *
+     * @param[out] d 接收数据的结构体
+     * @return bool true=存在数据, false=尚未写入
+     */
+    bool peek_latest(NormalizedData& d) const {
+        uint32_t w = write_idx.load(std::memory_order_acquire);
+        if (w == 0) {
+            return false;
+        }
+        uint32_t idx = (w - 1) % RING_SIZE;
+        d = data[idx];
+        return true;
+    }
 };
 
 /**

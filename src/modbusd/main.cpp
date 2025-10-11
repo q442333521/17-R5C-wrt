@@ -1,12 +1,15 @@
 #include "../common/logger.h"
 #include "../common/config.h"
 #include "../common/shm_ring.h"
+#include "../common/status_writer.h"
 #include <modbus/modbus.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <csignal>
 #include <cstring>
+#include <atomic>
+#include <filesystem>
 
 // 全局运行标志
 volatile sig_atomic_t g_running = 1;
@@ -188,6 +191,7 @@ int main(int argc, char* argv[]) {
     
     // 获取 Modbus 配置
     auto modbus_cfg = config.get_modbus_config();
+    std::string active_protocol = config.get_string("protocol.active", "modbus");
     
     if (!modbus_cfg.enabled) {
         LOG_WARN("Modbus TCP is disabled in config");
@@ -220,28 +224,59 @@ int main(int argc, char* argv[]) {
     LOG_INFO("Modbus TCP Daemon started successfully");
     
     // 启动数据更新线程
-    std::thread update_thread([&]() {
+    std::thread update_thread([&, config_path]() {
         NormalizedData data;
         NormalizedData last_data;
         memset(&last_data, 0, sizeof(last_data));
+        bool config_dirty = false;
+        std::atomic<bool> protocol_active{active_protocol == "modbus"};
+        std::filesystem::file_time_type last_mtime{};
+        auto last_mtime_check = std::chrono::steady_clock::now();
+        bool has_data = false;
         
         while (g_running) {
+            auto now = std::chrono::steady_clock::now();
+            if (now - last_mtime_check > std::chrono::seconds(1)) {
+                std::error_code ec;
+                auto current_mtime = std::filesystem::last_write_time(config_path, ec);
+                if (!ec && current_mtime != last_mtime) {
+                    last_mtime = current_mtime;
+                    if (config.load(config_path)) {
+                        auto refreshed = config.get_string("protocol.active", "modbus");
+                        bool new_state = (refreshed == "modbus");
+                        if (new_state != protocol_active.load()) {
+                            config_dirty = true;
+                        }
+                        protocol_active = new_state;
+                    }
+                }
+                last_mtime_check = now;
+            }
+            
             // 从共享内存读取最新数据
             if (ring->pop_latest(data)) {
                 // 验证 CRC
                 if (ndm_verify_crc(data)) {
                     // 只在数据变化时更新寄存器
                     if (data.sequence != last_data.sequence) {
-                        server.update_registers(data);
+                        if (protocol_active.load()) {
+                            server.update_registers(data);
+                        }
                         last_data = data;
+                        has_data = true;
                     }
                 } else {
                     LOG_WARN("CRC verification failed for sequence %u", data.sequence);
                 }
+                
+                StatusWriter::write_component_status("modbus", &data, protocol_active.load());
+            } else if (config_dirty) {
+                StatusWriter::write_component_status("modbus", has_data ? &last_data : nullptr, protocol_active.load());
             }
             
             // 休眠 10ms
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            config_dirty = false;
         }
     });
     

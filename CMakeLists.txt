@@ -38,6 +38,8 @@ add_subdirectory(src/common)
 add_subdirectory(src/rs485d)
 add_subdirectory(src/modbusd)
 add_subdirectory(src/webcfg)
+add_subdirectory(src/s7d)
+add_subdirectory(src/opcuad)
 
 # 安装规则
 install(DIRECTORY config/ DESTINATION /opt/gw/conf)

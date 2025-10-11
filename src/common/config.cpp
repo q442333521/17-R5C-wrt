@@ -38,7 +38,6 @@ bool ConfigManager::load(const std::string& path) {
         return false;
     }
     
-    std::cout << "Config loaded from: " << path << std::endl;
     return true;
 }
 
@@ -182,7 +181,7 @@ ConfigManager::RS485Config ConfigManager::get_rs485_config() const {
     RS485Config cfg;
     cfg.device = get_string("rs485.device", "/dev/ttyUSB0");
     cfg.baudrate = get_int("rs485.baudrate", 19200);
-    cfg.poll_rate_ms = get_int("rs485.poll_rate_ms", 20);
+    cfg.poll_rate_ms = get_int("rs485.poll_rate_ms", 10);
     cfg.timeout_ms = get_int("rs485.timeout_ms", 200);
     cfg.retry_count = get_int("rs485.retry_count", 3);
     cfg.simulate = get_bool("rs485.simulate", false);
@@ -193,8 +192,29 @@ ConfigManager::ModbusConfig ConfigManager::get_modbus_config() const {
     ModbusConfig cfg;
     cfg.enabled = get_bool("protocol.modbus.enabled", true);
     cfg.listen_ip = get_string("protocol.modbus.listen_ip", "0.0.0.0");
-    cfg.port = get_int("protocol.modbus.port", 502);
+    cfg.port = get_int("protocol.modbus.port", 1502);
     cfg.slave_id = get_int("protocol.modbus.slave_id", 1);
+    return cfg;
+}
+
+ConfigManager::S7Config ConfigManager::get_s7_config() const {
+    S7Config cfg;
+    cfg.enabled = get_bool("protocol.s7.enabled", false);
+    cfg.plc_ip = get_string("protocol.s7.plc_ip", "192.168.1.10");
+    cfg.rack = get_int("protocol.s7.rack", 0);
+    cfg.slot = get_int("protocol.s7.slot", 1);
+    cfg.db_number = get_int("protocol.s7.db_number", 10);
+    cfg.update_interval_ms = get_int("protocol.s7.update_interval_ms", 50);
+    return cfg;
+}
+
+ConfigManager::OPCUAConfig ConfigManager::get_opcua_config() const {
+    OPCUAConfig cfg;
+    cfg.enabled = get_bool("protocol.opcua.enabled", false);
+    cfg.server_url = get_string("protocol.opcua.server_url", "opc.tcp://192.168.1.20:4840");
+    cfg.security_mode = get_string("protocol.opcua.security_mode", "None");
+    cfg.username = get_string("protocol.opcua.username", "");
+    cfg.password = get_string("protocol.opcua.password", "");
     return cfg;
 }
 
@@ -227,7 +247,7 @@ Json::Value ConfigManager::get_default_config() const {
     // RS485 配置
     root["rs485"]["device"] = "/dev/ttyUSB0";
     root["rs485"]["baudrate"] = 19200;
-    root["rs485"]["poll_rate_ms"] = 20;
+    root["rs485"]["poll_rate_ms"] = 10;
     root["rs485"]["timeout_ms"] = 200;
     root["rs485"]["retry_count"] = 3;
     root["rs485"]["simulate"] = false;
@@ -238,7 +258,7 @@ Json::Value ConfigManager::get_default_config() const {
     // Modbus TCP
     root["protocol"]["modbus"]["enabled"] = true;
     root["protocol"]["modbus"]["listen_ip"] = "0.0.0.0";
-    root["protocol"]["modbus"]["port"] = 502;
+    root["protocol"]["modbus"]["port"] = 1502;
     root["protocol"]["modbus"]["slave_id"] = 1;
     
     // S7 (可选)

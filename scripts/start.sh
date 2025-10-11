@@ -95,6 +95,14 @@ start_daemon "modbusd" \
     "$BUILD_DIR/src/modbusd/modbusd" \
     "/tmp/gw-test/logs/modbusd.log"
 
+start_daemon "s7d" \
+    "$BUILD_DIR/src/s7d/s7d" \
+    "/tmp/gw-test/logs/s7d.log"
+
+start_daemon "opcuad" \
+    "$BUILD_DIR/src/opcuad/opcuad" \
+    "/tmp/gw-test/logs/opcuad.log"
+
 start_daemon "webcfg" \
     "$BUILD_DIR/src/webcfg/webcfg" \
     "/tmp/gw-test/logs/webcfg.log"
@@ -110,6 +118,8 @@ echo ""
 echo "Logs:"
 echo "  rs485d:  /tmp/gw-test/logs/rs485d.log"
 echo "  modbusd: /tmp/gw-test/logs/modbusd.log"
+echo "  s7d:     /tmp/gw-test/logs/s7d.log"
+echo "  opcuad:  /tmp/gw-test/logs/opcuad.log"
 echo "  webcfg:  /tmp/gw-test/logs/webcfg.log"
 echo ""
 echo "Web Interface:"

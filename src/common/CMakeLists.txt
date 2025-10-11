@@ -7,6 +7,8 @@ add_library(gateway_common STATIC
     config.cpp
     logger.h
     logger.cpp
+    status_writer.h
+    status_writer.cpp
 )
 
 target_link_libraries(gateway_common

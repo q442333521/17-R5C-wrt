@@ -209,10 +209,35 @@ public:
     struct RS485Config {
         std::string device = "/dev/ttyUSB0";  ///< 串口设备路径
         int baudrate = 19200;                  ///< 波特率
-        int poll_rate_ms = 20;                 ///< 采样周期（毫秒）
+        int poll_rate_ms = 10;                 ///< 采样周期（毫秒）
         int timeout_ms = 200;                  ///< 超时时间（毫秒）
         int retry_count = 3;                   ///< 重试次数
         bool simulate = false;                 ///< 是否启用模拟模式
+    };
+    
+    /**
+     * @struct S7Config
+     * @brief 西门子 S7 协议配置
+     */
+    struct S7Config {
+        bool enabled = false;
+        std::string plc_ip = "192.168.1.10";
+        int rack = 0;
+        int slot = 1;
+        int db_number = 10;
+        int update_interval_ms = 50;
+    };
+    
+    /**
+     * @struct OPCUAConfig
+     * @brief OPC UA 协议配置
+     */
+    struct OPCUAConfig {
+        bool enabled = false;
+        std::string server_url = "opc.tcp://192.168.1.20:4840";
+        std::string security_mode = "None";
+        std::string username;
+        std::string password;
     };
     
     /**
@@ -255,6 +280,16 @@ public:
      * @return ModbusConfig 结构化的配置对象
      */
     ModbusConfig get_modbus_config() const;
+    
+    /**
+     * @brief 获取 S7 协议配置
+     */
+    S7Config get_s7_config() const;
+    
+    /**
+     * @brief 获取 OPC UA 协议配置
+     */
+    OPCUAConfig get_opcua_config() const;
     
     /**
      * @brief 获取网络配置
