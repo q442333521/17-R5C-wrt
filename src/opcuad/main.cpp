@@ -157,9 +157,13 @@ bool opcua_is_connected() {
         return false;
     }
     
-    UA_ClientState state = UA_Client_getState(g_opcua_client);
-    return (state == UA_CLIENTSTATE_SESSION ||
-            state == UA_CLIENTSTATE_SESSION_RENEWED);
+    UA_SecureChannelState channel_state = UA_SECURECHANNELSTATE_CLOSED;
+    UA_SessionState session_state = UA_SESSIONSTATE_CLOSED;
+    UA_StatusCode connect_status = UA_STATUSCODE_BAD;
+    UA_Client_getState(g_opcua_client, &channel_state, &session_state, &connect_status);
+    return (connect_status == UA_STATUSCODE_GOOD &&
+            session_state == UA_SESSIONSTATE_ACTIVATED &&
+            channel_state == UA_SECURECHANNELSTATE_OPEN);
 }
 
 /**
@@ -298,7 +302,8 @@ bool opcua_write_data(const NormalizedData& data) {
     }
     
     // 2. 写入时间戳
-    if (!opcua_write_int64("ns=2;s=Gateway.Timestamp", static_cast<int64_t>(data.timestamp_ms))) {
+    const int64_t timestamp_ms = static_cast<int64_t>(data.timestamp_ns / 1000000ULL);
+    if (!opcua_write_int64("ns=2;s=Gateway.Timestamp", timestamp_ms)) {
         ok = false;
     }
     
@@ -510,7 +515,9 @@ int main(int argc, char* argv[]) {
             if (protocol_active && total_writes > 0) {
                 double error_rate = (double)failed_writes / total_writes * 100.0;
                 LOG_INFO("OPC UA 统计: 总写入=%llu, 失败=%llu, 失败率=%.2f%%",
-                        total_writes, failed_writes, error_rate);
+                        static_cast<unsigned long long>(total_writes),
+                        static_cast<unsigned long long>(failed_writes),
+                        error_rate);
             }
             stats_start = now;
             total_writes = 0;

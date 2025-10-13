@@ -67,10 +67,10 @@ sudo apt install -y \
     pkg-config
 
 # 给脚本添加执行权限
-chmod +x build_and_deploy.sh
+chmod +x scripts/wrt/build_and_deploy.sh
 
 # 编译项目
-./build_and_deploy.sh build
+./scripts/wrt/build_and_deploy.sh build
 
 # 查看编译结果
 ls -lh build-wrt/src/*/
@@ -121,13 +121,13 @@ minicom -D /dev/ttyUSB0 -b 19200
 cd ~/gateway-project
 
 # 方式 1: 完整部署（推荐，会制作 IPK 包）
-./build_and_deploy.sh deploy
+./scripts/wrt/build_and_deploy.sh deploy
 
 # 方式 2: 快速部署（不打包 IPK，用于开发测试）
-./build_and_deploy.sh deploy-direct
+./scripts/wrt/build_and_deploy.sh deploy-direct
 
 # 方式 3: 仅打包 IPK
-./build_and_deploy.sh package
+./scripts/wrt/build_and_deploy.sh package
 
 # IPK 包会生成在 package/ 目录
 ls -lh package/*.ipk
@@ -214,7 +214,7 @@ python test_modbus.py
 vim src/rs485d/main.cpp
 
 # 2. 快速编译并部署
-./build_and_deploy.sh deploy-direct
+./scripts/wrt/build_and_deploy.sh deploy-direct
 
 # 3. SSH 到 FriendlyWrt 查看日志
 ssh root@192.168.2.1 "tail -f /opt/gw/logs/rs485d.log"
@@ -319,7 +319,7 @@ ls -l /etc/udev/rules.d/
 ```bash
 # 清理并重新编译
 rm -rf build-wrt
-./build_and_deploy.sh build
+./scripts/wrt/build_and_deploy.sh build
 
 # 检查依赖
 pkg-config --modversion libmodbus

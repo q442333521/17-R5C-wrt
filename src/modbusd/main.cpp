@@ -102,19 +102,18 @@ public:
         // 40008:       Uint16 序列号 (低 16 位)
         
         // Float32 转 2×Uint16 (Big-Endian)
-        uint32_t thickness_raw;
-        memcpy(&thickness_raw, &data.thickness_mm, 4);
-        thickness_raw = __builtin_bswap32(thickness_raw); // 转大端
-        regs[0] = (thickness_raw >> 16) & 0xFFFF;
-        regs[1] = thickness_raw & 0xFFFF;
+        uint32_t thickness_raw = 0;
+        static_assert(sizeof(thickness_raw) == sizeof(data.thickness_mm), "float size mismatch");
+        memcpy(&thickness_raw, &data.thickness_mm, sizeof(thickness_raw));
+        regs[0] = static_cast<uint16_t>((thickness_raw >> 16) & 0xFFFF);
+        regs[1] = static_cast<uint16_t>(thickness_raw & 0xFFFF);
         
         // Uint64 时间戳转 Unix ms (Big-Endian)
-        uint64_t timestamp_ms = data.timestamp_ns / 1000000;
-        timestamp_ms = __builtin_bswap64(timestamp_ms);
-        regs[2] = (timestamp_ms >> 48) & 0xFFFF;
-        regs[3] = (timestamp_ms >> 32) & 0xFFFF;
-        regs[4] = (timestamp_ms >> 16) & 0xFFFF;
-        regs[5] = timestamp_ms & 0xFFFF;
+        uint64_t timestamp_ms = data.timestamp_ns / 1000000ULL;
+        regs[2] = static_cast<uint16_t>((timestamp_ms >> 48) & 0xFFFF);
+        regs[3] = static_cast<uint16_t>((timestamp_ms >> 32) & 0xFFFF);
+        regs[4] = static_cast<uint16_t>((timestamp_ms >> 16) & 0xFFFF);
+        regs[5] = static_cast<uint16_t>(timestamp_ms & 0xFFFF);
         
         // 状态位
         regs[6] = data.status;

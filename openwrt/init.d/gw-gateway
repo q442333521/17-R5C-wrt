@@ -1,0 +1,72 @@
+#!/bin/sh /etc/rc.common
+# Gateway 服务启动脚本 (FriendlyWrt/OpenWrt)
+
+USE_PROCD=1
+
+START=99
+STOP=10
+
+TARGET_PREFIX="${TARGET_PREFIX:-/opt/gw}"
+PROG_DIR="$TARGET_PREFIX/bin"
+CONF_FILE="$TARGET_PREFIX/conf/config.json"
+LOG_DIR="$TARGET_PREFIX/logs"
+DATA_DIR="$TARGET_PREFIX/data"
+
+common_prepare() {
+	mkdir -p "$LOG_DIR" "$DATA_DIR"
+}
+
+start_service() {
+	common_prepare
+
+	procd_open_instance rs485d
+	procd_set_param command "$PROG_DIR/rs485d" "$CONF_FILE"
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+
+	procd_open_instance modbusd
+	procd_set_param command "$PROG_DIR/modbusd" "$CONF_FILE"
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+
+	procd_open_instance webcfg
+	procd_set_param command "$PROG_DIR/webcfg" "$CONF_FILE"
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+
+	if [ -x "$PROG_DIR/opcuad" ]; then
+		procd_open_instance opcuad
+		procd_set_param command "$PROG_DIR/opcuad" "$CONF_FILE"
+		procd_set_param respawn 3600 5 5
+		procd_set_param stdout 1
+		procd_set_param stderr 1
+		procd_close_instance
+	fi
+
+	if [ -x "$PROG_DIR/s7d" ]; then
+		procd_open_instance s7d
+		procd_set_param command "$PROG_DIR/s7d" "$CONF_FILE"
+		procd_set_param respawn 3600 5 5
+		procd_set_param stdout 1
+		procd_set_param stderr 1
+		procd_close_instance
+	fi
+}
+
+stop_service() {
+	killall webcfg 2>/dev/null
+	killall modbusd 2>/dev/null
+	killall rs485d 2>/dev/null
+	killall opcuad 2>/dev/null
+	killall s7d 2>/dev/null
+}
+
+service_triggers() {
+	procd_add_reload_trigger "gw-gateway"
+}

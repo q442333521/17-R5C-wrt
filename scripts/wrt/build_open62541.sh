@@ -540,9 +540,9 @@ echo "  pkg-config --libs open62541"
 echo ""
 
 print_info "如需重新编译其他配置:"
-echo "  sudo BUILD_CONFIG=minimal ./build_open62541.sh"
-echo "  sudo BUILD_CONFIG=standard ./build_open62541.sh"
-echo "  sudo BUILD_CONFIG=full ./build_open62541.sh"
+echo "  sudo BUILD_CONFIG=minimal ./scripts/wrt/build_open62541.sh"
+echo "  sudo BUILD_CONFIG=standard ./scripts/wrt/build_open62541.sh"
+echo "  sudo BUILD_CONFIG=full ./scripts/wrt/build_open62541.sh"
 echo ""
 
 print_success "脚本执行完成！"

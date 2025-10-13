@@ -61,10 +61,10 @@ sudo apt install -y \
     pkg-config
 
 # 添加执行权限
-chmod +x build_and_deploy.sh
+chmod +x scripts/wrt/build_and_deploy.sh
 
 # 编译项目
-./build_and_deploy.sh build
+./scripts/wrt/build_and_deploy.sh build
 ```
 
 **预期输出**：
@@ -143,7 +143,7 @@ cd /tmp
 cd ~/gateway-project
 
 # 完整部署（推荐，会制作 IPK 包）
-./build_and_deploy.sh deploy
+./scripts/wrt/build_and_deploy.sh deploy
 ```
 
 **预期输出**：
@@ -317,10 +317,10 @@ if (rc == 2) {
 
 ```bash
 # 编译
-./build_and_deploy.sh build
+./scripts/wrt/build_and_deploy.sh build
 
 # 快速部署（不打包 IPK）
-./build_and_deploy.sh deploy-direct
+./scripts/wrt/build_and_deploy.sh deploy-direct
 
 # 在 FriendlyWrt 上重启服务
 ssh root@192.168.2.1 "/etc/init.d/gw-gateway restart"
@@ -346,7 +346,7 @@ Test-NetConnection -ComputerName 100.64.0.1 -Port 22
 ```bash
 # 清理重新编译
 rm -rf build-wrt
-./build_and_deploy.sh build
+./scripts/wrt/build_and_deploy.sh build
 
 # 检查依赖
 pkg-config --modversion libmodbus
@@ -403,13 +403,13 @@ ssh root@192.168.2.1
 ```bash
 # 编译
 cd ~/gateway-project
-./build_and_deploy.sh build
+./scripts/wrt/build_and_deploy.sh build
 
 # 部署
-./build_and_deploy.sh deploy
+./scripts/wrt/build_and_deploy.sh deploy
 
 # 快速部署（开发测试）
-./build_and_deploy.sh deploy-direct
+./scripts/wrt/build_and_deploy.sh deploy-direct
 ```
 
 ### FriendlyWrt 操作

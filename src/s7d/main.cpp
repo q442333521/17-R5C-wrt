@@ -55,7 +55,7 @@ using namespace std::chrono_literals;
 volatile sig_atomic_t g_running = 1;
 
 /// @brief S7 客户端句柄
-S7Object g_s7_client = nullptr;
+S7Object g_s7_client = 0;
 
 // ============================================================================
 // 信号处理
@@ -122,8 +122,12 @@ bool s7_is_connected() {
     if (!g_s7_client) {
         return false;
     }
-    int status = Cli_GetConnected(g_s7_client);
-    return (status != 0);
+    int connected = 0;
+    int status = Cli_GetConnected(g_s7_client, &connected);
+    if (status != 0) {
+        return false;
+    }
+    return connected != 0;
 }
 
 /**
@@ -160,8 +164,9 @@ bool s7_write_data(int db_number, const NormalizedData& data) {
     std::memcpy(buffer + 0, &thickness_be, 4);
     
     // 2. 写入时间戳 (Uint64, Big-Endian, 分成高低32位)
-    uint32_t timestamp_low = htonl(static_cast<uint32_t>(data.timestamp_ms & 0xFFFFFFFF));
-    uint32_t timestamp_high = htonl(static_cast<uint32_t>(data.timestamp_ms >> 32));
+    uint64_t timestamp_ms = data.timestamp_ns / 1000000ULL;
+    uint32_t timestamp_low = htonl(static_cast<uint32_t>(timestamp_ms & 0xFFFFFFFFULL));
+    uint32_t timestamp_high = htonl(static_cast<uint32_t>(timestamp_ms >> 32));
     std::memcpy(buffer + 4, &timestamp_low, 4);
     std::memcpy(buffer + 8, &timestamp_high, 4);
     
@@ -377,7 +382,9 @@ int main(int argc, char* argv[]) {
             if (protocol_active && total_writes > 0) {
                 double error_rate = (double)failed_writes / total_writes * 100.0;
                 LOG_INFO("S7 统计: 总写入=%llu, 失败=%llu, 失败率=%.2f%%",
-                        total_writes, failed_writes, error_rate);
+                        static_cast<unsigned long long>(total_writes),
+                        static_cast<unsigned long long>(failed_writes),
+                        error_rate);
             }
             stats_start = now;
             total_writes = 0;

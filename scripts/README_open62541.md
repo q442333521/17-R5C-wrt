@@ -30,7 +30,7 @@ sudo ./scripts/install_deps.sh
 
 ```bash
 cd ~/r5c
-sudo BUILD_CONFIG=minimal ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=minimal ./scripts/wrt/build_open62541.sh
 ```
 
 **功能：**
@@ -48,7 +48,7 @@ sudo BUILD_CONFIG=minimal ./scripts/build_open62541.sh
 
 ```bash
 cd ~/r5c
-sudo BUILD_CONFIG=standard ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=standard ./scripts/wrt/build_open62541.sh
 ```
 
 **功能：**
@@ -69,7 +69,7 @@ sudo BUILD_CONFIG=standard ./scripts/build_open62541.sh
 
 ```bash
 cd ~/r5c
-sudo BUILD_CONFIG=full ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=full ./scripts/wrt/build_open62541.sh
 ```
 
 **功能：**
@@ -188,13 +188,13 @@ Could NOT find MbedTLS
 
 **解决方法 1：** 使用标准配置（推荐）
 ```bash
-sudo BUILD_CONFIG=standard ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=standard ./scripts/wrt/build_open62541.sh
 ```
 
 **解决方法 2：** 安装 MbedTLS
 ```bash
 sudo apt install libmbedtls-dev
-sudo BUILD_CONFIG=full ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=full ./scripts/wrt/build_open62541.sh
 ```
 
 ---
@@ -252,7 +252,7 @@ sudo rm -rf /usr/local/lib/cmake/open62541
 sudo ldconfig
 
 # 重新安装
-sudo ./scripts/build_open62541.sh
+sudo ./scripts/wrt/build_open62541.sh
 ```
 
 ---
@@ -263,10 +263,10 @@ sudo ./scripts/build_open62541.sh
 
 ```bash
 # 从 standard 切换到 full
-sudo BUILD_CONFIG=full ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=full ./scripts/wrt/build_open62541.sh
 
 # 从 full 切换到 minimal
-sudo BUILD_CONFIG=minimal ./scripts/build_open62541.sh
+sudo BUILD_CONFIG=minimal ./scripts/wrt/build_open62541.sh
 ```
 
 脚本会自动覆盖之前的安装。

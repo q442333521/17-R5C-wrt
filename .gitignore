@@ -1,6 +1,7 @@
 # Build directories
 build/
 cmake-build-*/
+build-wrt/
 
 # Compiled binaries
 *.o

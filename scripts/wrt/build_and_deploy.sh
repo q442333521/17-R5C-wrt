@@ -10,7 +10,7 @@
 # 4. 配置和启动服务
 #
 # 使用方式：
-#   ./build_and_deploy.sh [命令]
+#   ./scripts/wrt/build_and_deploy.sh [命令]
 #
 # 命令：
 #   build      - 仅编译
@@ -30,13 +30,13 @@ set -e  # 遇到错误立即退出
 # ============================================================================
 
 # 项目配置
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build-wrt"
 PACKAGE_DIR="$PROJECT_ROOT/package"
 IPK_VERSION="1.0.0"
 
 # FriendlyWrt 设备配置（根据你的 SSH 配置）
-DEVICE_HOST="192.168.2.1"
+DEVICE_HOST="100.121.179.13"
 DEVICE_USER="root"
 DEVICE_NAME="FriendlyWrt"
 
@@ -138,7 +138,7 @@ build_project() {
     
     # 配置 CMake
     print_info "配置 CMake..."
-    cmake .. \
+    cmake "$PROJECT_ROOT" \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$TARGET_PREFIX" \
         -DCMAKE_CXX_FLAGS="-O2 -march=armv8-a+crc+crypto"

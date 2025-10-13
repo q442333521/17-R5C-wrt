@@ -11,10 +11,10 @@
   "rs485": {
     "device": "/dev/ttyUSB0",
     "baudrate": 19200,
-    "poll_rate_ms": 10,
+    "poll_rate_ms": 20,
     "timeout_ms": 200,
     "retry_count": 3,
-    "simulate": false
+    "simulate": true
   },
   "protocol": {
     "active": "modbus",

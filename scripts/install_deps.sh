@@ -240,12 +240,12 @@ if [ "$USE_SOURCE_BUILD" = true ]; then
     echo ""
     
     # 检查专用编译脚本是否存在
-    BUILD_SCRIPT="$SCRIPT_DIR/build_open62541.sh"
+    BUILD_SCRIPT="$SCRIPT_DIR/wrt/build_open62541.sh"
     
     if [ ! -f "$BUILD_SCRIPT" ]; then
         echo "  ❌ 错误: 找不到编译脚本 $BUILD_SCRIPT"
         echo ""
-        echo "  请确保 build_open62541.sh 与此脚本在同一目录下"
+        echo "  请确保 scripts/wrt/build_open62541.sh 已正确放置"
         exit 1
     fi
     
@@ -405,7 +405,7 @@ echo "  2. 生成构建文件: cmake .."
 echo "  3. 编译项目: make -j$(nproc)"
 echo ""
 echo "如果需要重新安装 open62541 的其他配置:"
-echo "  sudo BUILD_CONFIG=minimal $SCRIPT_DIR/build_open62541.sh  # 最小化"
-echo "  sudo BUILD_CONFIG=standard $SCRIPT_DIR/build_open62541.sh # 标准版 (当前)"
-echo "  sudo BUILD_CONFIG=full $SCRIPT_DIR/build_open62541.sh     # 完整版 (含加密)"
+echo "  sudo BUILD_CONFIG=minimal $SCRIPT_DIR/wrt/build_open62541.sh  # 最小化"
+echo "  sudo BUILD_CONFIG=standard $SCRIPT_DIR/wrt/build_open62541.sh # 标准版 (当前)"
+echo "  sudo BUILD_CONFIG=full $SCRIPT_DIR/wrt/build_open62541.sh     # 完整版 (含加密)"
 echo ""

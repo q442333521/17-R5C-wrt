@@ -52,7 +52,7 @@
 │   │   ├── start.sh           ✅ 启动脚本
 │   │   ├── stop.sh            ✅ 停止脚本
 │   │   ├── gateway.bat        ✅ Windows 辅助脚本
-│   │   └── deploy_wrt.sh      ✅ FriendlyWRT 部署模板
+│   │   └── wrt/               ✅ FriendlyWrt 工具集
 │   └── systemd/ (3 个)
 │       ├── gw-rs485d.service  ✅ RS-485 服务
 │       ├── gw-modbusd.service ✅ Modbus 服务
@@ -126,11 +126,11 @@
 #### ✅ 构建与部署
 - [x] CMake 跨平台构建系统
 - [x] 自动依赖检查
-- [x] 一键编译脚本（build.sh）
-- [x] 启动/停止脚本（start.sh / stop.sh）
+- [x] 一键编译脚本（scripts/build.sh）
+- [x] 启动/停止脚本（scripts/start.sh / scripts/stop.sh）
 - [x] systemd 服务配置
-- [x] Windows/WSL 兼容（gateway.bat）
-- [x] FriendlyWRT 部署模板（deploy_wrt.sh）
+- [x] Windows/WSL 兼容（scripts/gateway.bat）
+- [x] FriendlyWrt 工具集（scripts/wrt/*.sh）
 
 #### ✅ 测试工具
 - [x] Python Modbus 客户端测试

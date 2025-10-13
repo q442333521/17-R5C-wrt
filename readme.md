@@ -148,10 +148,14 @@ python3 tests/test_modbus_client.py
 │   └── config.json
 │
 ├── scripts/                   # 工具脚本
-│   ├── build.sh              # 编译脚本
-│   ├── start.sh              # 启动脚本（开发测试用）
+│   ├── build.sh              # 本地编译脚本
+│   ├── start.sh              # 本地启动脚本
 │   ├── stop.sh               # 停止脚本
-│   └── deploy_wrt.sh         # 部署到 FriendlyWRT（待实现）
+│   └── wrt/                  # FriendlyWrt 专用脚本
+│       ├── build_and_deploy.sh  # 编译/打包/部署
+│       ├── deploy_wrt.sh        # 仅部署或远程控制
+│       ├── start_local_wrt.sh   # 本地验证 build-wrt 产物
+│       └── build_open62541.sh   # open62541 依赖构建
 │
 ├── systemd/                  # systemd 服务配置
 │   ├── gw-rs485d.service

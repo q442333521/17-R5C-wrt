@@ -174,11 +174,11 @@ tail -f /tmp/gw-test/logs/*.log
 - [x] 部署脚本说明
 
 ### ✅ 工具脚本
-- [x] 编译脚本（build.sh）
-- [x] 启动脚本（start.sh）
-- [x] 停止脚本（stop.sh）
-- [x] 部署脚本模板（deploy_wrt.sh）
-- [x] Windows 辅助脚本（gateway.bat）
+- [x] 编译脚本（scripts/build.sh）
+- [x] 启动脚本（scripts/start.sh）
+- [x] 停止脚本（scripts/stop.sh）
+- [x] FriendlyWrt 工具集（scripts/wrt/*.sh）
+- [x] Windows 辅助脚本（scripts/gateway.bat）
 
 ---
 
