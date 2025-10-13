@@ -255,22 +255,32 @@ EOF
     print_info "打包 IPK..."
     cd "$PACKAGE_DIR"
     
-    # 创建数据压缩包
+    # 创建临时工作目录
+    local WORK_DIR="$PACKAGE_DIR/work"
+    mkdir -p "$WORK_DIR"
+    cd "$WORK_DIR"
+    
+    # 创建数据压缩包（注意：必须使用 gzip 而不是其他压缩格式）
+    print_info "  创建 data.tar.gz..."
     tar --numeric-owner --owner=0 --group=0 -czf data.tar.gz -C "$PKG_ROOT" opt etc
     
     # 创建控制文件压缩包
-    tar --numeric-owner --owner=0 --group=0 -czf control.tar.gz -C "$PKG_ROOT/CONTROL" control postinst prerm
+    print_info "  创建 control.tar.gz..."
+    tar --numeric-owner --owner=0 --group=0 -czf control.tar.gz -C "$PKG_ROOT/CONTROL" .
     
-    # 创建 debian-binary
+    # 创建 debian-binary（必须包含换行符）
+    print_info "  创建 debian-binary..."
     echo "2.0" > debian-binary
     
-    # 创建最终的 IPK 包
+    # 创建最终的 IPK 包（注意：使用 'ar rc' 而不是 'ar rcs'，s 参数会导致 opkg 报错）
+    print_info "  打包 IPK..."
     local IPK_NAME="gw-gateway_${IPK_VERSION}_aarch64_cortex-a53.ipk"
-    rm -f "$IPK_NAME"
-    ar rcs "$IPK_NAME" debian-binary control.tar.gz data.tar.gz
+    rm -f "../$IPK_NAME"
+    ar rc "../$IPK_NAME" debian-binary control.tar.gz data.tar.gz
     
     # 清理临时文件
-    rm -f debian-binary control.tar.gz data.tar.gz
+    cd "$PACKAGE_DIR"
+    rm -rf "$WORK_DIR"
     
     # 显示结果
     local ipk_size=$(du -h "$IPK_NAME" | cut -f1)
