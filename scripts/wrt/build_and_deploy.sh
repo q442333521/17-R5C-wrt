@@ -256,17 +256,18 @@ EOF
     cd "$PACKAGE_DIR"
     
     # 创建数据压缩包
-    tar czf data.tar.gz -C "$PKG_ROOT" opt etc
+    tar --numeric-owner --owner=0 --group=0 -czf data.tar.gz -C "$PKG_ROOT" opt etc
     
     # 创建控制文件压缩包
-    tar czf control.tar.gz -C "$PKG_ROOT" CONTROL
+    tar --numeric-owner --owner=0 --group=0 -czf control.tar.gz -C "$PKG_ROOT/CONTROL" control postinst prerm
     
     # 创建 debian-binary
     echo "2.0" > debian-binary
     
     # 创建最终的 IPK 包
     local IPK_NAME="gw-gateway_${IPK_VERSION}_aarch64_cortex-a53.ipk"
-    ar r "$IPK_NAME" debian-binary control.tar.gz data.tar.gz
+    rm -f "$IPK_NAME"
+    ar rcs "$IPK_NAME" debian-binary control.tar.gz data.tar.gz
     
     # 清理临时文件
     rm -f debian-binary control.tar.gz data.tar.gz

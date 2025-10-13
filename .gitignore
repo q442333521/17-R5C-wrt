@@ -2,6 +2,7 @@
 build/
 cmake-build-*/
 build-wrt/
+package/
 
 # Compiled binaries
 *.o

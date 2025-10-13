@@ -12,6 +12,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build-wrt"
 INIT_SCRIPT="$PROJECT_ROOT/openwrt/init.d/gw-gateway"
 DEFAULT_CONFIG="$PROJECT_ROOT/config/config.json"
+PACKAGE_DIR="$PROJECT_ROOT/package"
+BUILD_SCRIPT="$SCRIPT_DIR/build_and_deploy.sh"
 
 DEVICE_HOST="${DEVICE_HOST:-100.121.179.13}"
 DEVICE_USER="${DEVICE_USER:-root}"
@@ -30,11 +32,13 @@ usage() {
 用法: ./scripts/wrt/deploy_wrt.sh [命令]
 
 命令:
-  deploy   构建产物存在的前提下，推送二进制和配置到 FriendlyWrt，并重启服务
-  restart  仅重启远端服务 (不重新上传)
-  stop     停止远端服务
-  status   查看远端服务状态
-  help     显示本帮助
+  deploy        构建 IPK 包并推送到 FriendlyWrt，自动安装/启用服务
+  install       使用现有 IPK 包直接推送并安装
+  sync          直接同步当前 build-wrt 二进制（开发模式）
+  restart       仅重启远端服务
+  stop          停止远端服务
+  status        查看远端服务状态
+  help          显示本帮助
 
 可通过环境变量覆盖默认配置:
   DEVICE_HOST, DEVICE_USER, DEVICE_PASS, TARGET_PREFIX
@@ -56,6 +60,83 @@ scp_push() {
     local src="$1"
     local dest="$2"
     sshpass -p "$DEVICE_PASS" scp "${SSH_OPTS[@]}" "$src" "$DEVICE_USER@$DEVICE_HOST:$dest"
+}
+
+ensure_build_script() {
+    if [ ! -x "$BUILD_SCRIPT" ]; then
+        if [ -f "$BUILD_SCRIPT" ]; then
+            chmod +x "$BUILD_SCRIPT"
+        else
+            echo "找不到打包脚本: $BUILD_SCRIPT" >&2
+            exit 1
+        fi
+    fi
+}
+
+build_ipk() {
+    ensure_build_script
+    echo "[INFO] 构建 IPK 包..."
+    "$BUILD_SCRIPT" package
+}
+
+find_latest_ipk() {
+    if [ ! -d "$PACKAGE_DIR" ]; then
+        return 1
+    fi
+    local ipk_path
+    ipk_path="$(python3 - "$PACKAGE_DIR" <<'PY'
+import sys, pathlib
+pkg_dir = pathlib.Path(sys.argv[1])
+ipks = sorted(pkg_dir.glob("*.ipk"), key=lambda p: p.stat().st_mtime, reverse=True)
+if ipks:
+    print(ipks[0])
+PY
+)"
+    if [ -z "$ipk_path" ]; then
+        return 1
+    fi
+    printf '%s\n' "$ipk_path"
+}
+
+install_ipk() {
+    local ipk_path="${1:-}"
+    if [ -z "$ipk_path" ]; then
+        ipk_path="$(find_latest_ipk)" || {
+            echo "未找到 IPK 包，请先运行: $0 deploy 或 $0 install <ipk_path>" >&2
+            exit 1
+        }
+    fi
+    if [ ! -f "$ipk_path" ]; then
+        if [ -f "$PACKAGE_DIR/$ipk_path" ]; then
+            ipk_path="$PACKAGE_DIR/$ipk_path"
+        fi
+    fi
+    if [ ! -f "$ipk_path" ]; then
+        echo "指定的 IPK 不存在: $ipk_path" >&2
+        exit 1
+    fi
+
+    local ipk_name
+    ipk_name="$(basename "$ipk_path")"
+
+    echo "[INFO] 上传 IPK 包: $ipk_name"
+    scp_push "$ipk_path" "/tmp/$ipk_name"
+
+    echo "[INFO] 安装 IPK 包..."
+    sshpass -p "$DEVICE_PASS" ssh "${SSH_OPTS[@]}" "$DEVICE_USER@$DEVICE_HOST" "bash -s" <<EOF
+set -e
+if opkg list-installed | grep -q "^gw-gateway"; then
+    echo "[远端] 卸载旧版本..."
+    opkg remove gw-gateway >/dev/null 2>&1 || true
+fi
+echo "[远端] 安装新版本..."
+opkg install /tmp/$ipk_name
+rm -f /tmp/$ipk_name
+/etc/init.d/gw-gateway enable
+/etc/init.d/gw-gateway restart
+/etc/init.d/gw-gateway status || true
+EOF
+    echo "[INFO] IPK 部署完成"
 }
 
 check_build_artifacts() {
@@ -112,6 +193,21 @@ cmd="${1:-deploy}"
 
 case "$cmd" in
     deploy)
+        require_cmd sshpass
+        require_cmd scp
+        require_cmd ssh
+        build_ipk
+        install_ipk
+        remote_status
+        ;;
+    install)
+        require_cmd sshpass
+        require_cmd scp
+        require_cmd ssh
+        install_ipk "${2:-}"
+        remote_status
+        ;;
+    sync)
         require_cmd sshpass
         require_cmd scp
         require_cmd ssh

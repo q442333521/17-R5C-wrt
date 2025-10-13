@@ -19,7 +19,7 @@ FriendlyWrt 相关文件统一迁移至 `scripts/wrt/` 目录，便于区分交�
 | 脚本 | 作用 | 适用场景 | 常用命令 |
 | --- | --- | --- | --- |
 | `scripts/wrt/build_and_deploy.sh` | 一体化流程：检查依赖 → 重新生成 `build-wrt/` → 可选打包 IPK → 推送到目标设备 | 从源码重新生成并部署到 FriendlyWrt | `./scripts/wrt/build_and_deploy.sh build`<br>`./scripts/wrt/build_and_deploy.sh package`<br>`./scripts/wrt/build_and_deploy.sh deploy` |
-| `scripts/wrt/deploy_wrt.sh` | 单独的部署/远程控制脚本，支持 `deploy`、`restart`、`stop`、`status` 子命令 | 已完成编译，只需推送或远程重启服务 | `./scripts/wrt/deploy_wrt.sh deploy` |
+| `scripts/wrt/deploy_wrt.sh` | 生成/上传 IPK 包并远程控制服务（含 `deploy`、`install`、`sync`、`restart` 等命令） | 将完整网关以 IPK 形式安装到 FriendlyWrt，或快速同步二进制 | `./scripts/wrt/deploy_wrt.sh deploy` |
 | `scripts/wrt/start_local_wrt.sh` | 在本地使用 `build-wrt/` 的 ARM64 产物启动所有守护进程，并运行 Modbus 自动化测试 | 不连接设备时验证 FriendlyWrt 构建物 | `./scripts/wrt/start_local_wrt.sh` |
 | `scripts/wrt/build_open62541.sh` | 以 Root 权限从源码构建 open62541（OPC UA 库），支持 minimal/standard/full 三种配置 | 需要升级或重新安装 open62541 依赖时 | `sudo BUILD_CONFIG=standard ./scripts/wrt/build_open62541.sh` |
 
