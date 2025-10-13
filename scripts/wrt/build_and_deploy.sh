@@ -2,7 +2,7 @@
 ################################################################################
 # FriendlyWrt 编译和部署脚本（最终修复版）
 # 
-# 关键修复：IPK 文件顺序必须是 debian-binary, data.tar.gz, control.tar.gz
+# 关键修复：IPK 文件顺序必须是 debian-binary, control.tar.gz, data.tar.gz
 #
 ################################################################################
 
@@ -193,13 +193,43 @@ exit 0
 EOF
     chmod 755 "$CONTROL_DIR/postinst"
     
-    cat > "$CONTROL_DIR/prerm" << 'EOF'
+cat > "$CONTROL_DIR/prerm" << 'EOF'
 #!/bin/sh
 /etc/init.d/gw-gateway stop 2>/dev/null || true
 /etc/init.d/gw-gateway disable 2>/dev/null || true
 exit 0
 EOF
     chmod 755 "$CONTROL_DIR/prerm"
+
+    print_info "生成 md5sums..."
+    python3 - "$PKG_ROOT" "$CONTROL_DIR/md5sums" <<'PY'
+import hashlib, os, sys
+root = os.path.abspath(sys.argv[1])
+out_path = sys.argv[2]
+entries = []
+for dirpath, dirnames, filenames in os.walk(root):
+    dirnames.sort()
+    filenames.sort()
+    for name in filenames:
+        path = os.path.join(dirpath, name)
+        rel = os.path.relpath(path, root)
+        h = hashlib.md5()
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                if not chunk:
+                    break
+                h.update(chunk)
+        entries.append(f"{h.hexdigest()}  {rel}\n")
+with open(out_path, 'w') as out:
+    out.writelines(entries)
+PY
+    chmod 644 "$CONTROL_DIR/md5sums"
+
+    print_info "创建 conffiles..."
+    cat > "$CONTROL_DIR/conffiles" <<'EOF'
+/opt/gw/conf/config.json
+EOF
+    chmod 644 "$CONTROL_DIR/conffiles"
     
     print_info "打包 IPK..."
     local WORK_DIR="$PACKAGE_DIR/ipk-work"
@@ -207,23 +237,32 @@ EOF
     mkdir -p "$WORK_DIR"
     cd "$WORK_DIR"
     
-    print_info "  创建 data.tar.gz..."
-    tar --numeric-owner --owner=0 --group=0 -czf data.tar.gz -C "$PKG_ROOT" ./
-    
     print_info "  创建 control.tar.gz..."
-    tar --numeric-owner --owner=0 --group=0 -czf control.tar.gz -C "$CONTROL_DIR" ./
+    tar --format=ustar \
+        --numeric-owner --owner=0 --group=0 \
+        --sort=name --mtime='@0' \
+        --transform='s,^,./,' \
+        -cf control.tar -C "$CONTROL_DIR" control postinst prerm md5sums conffiles
+    gzip -n control.tar
+    
+    print_info "  创建 data.tar.gz..."
+    tar --format=ustar \
+        --numeric-owner --owner=0 --group=0 \
+        --sort=name --mtime='@0' \
+        --transform='s,^,./,' \
+        -cf data.tar -C "$PKG_ROOT" opt etc
+    gzip -n data.tar
     
     print_info "  创建 debian-binary..."
     echo "2.0" > debian-binary
     
     # ==================== 关键修复 ====================
-    # IPK 包文件顺序必须是：debian-binary, data.tar.gz, control.tar.gz
-    # 使用 ar rv 命令（不是 ar rcs）
+    # IPK 包文件顺序必须是：debian-binary, control.tar.gz, data.tar.gz
     # ==================================================
-    print_info "  使用 ar 打包（顺序：debian-binary, data.tar.gz, control.tar.gz）..."
+    print_info "  使用 ar 打包（顺序：debian-binary, control.tar.gz, data.tar.gz）..."
     local IPK_NAME="gw-gateway_${IPK_VERSION}_aarch64_cortex-a53.ipk"
     rm -f "$PACKAGE_DIR/$IPK_NAME"
-    ar rv "$PACKAGE_DIR/$IPK_NAME" debian-binary data.tar.gz control.tar.gz
+    ar rv "$PACKAGE_DIR/$IPK_NAME" debian-binary control.tar.gz data.tar.gz
     
     cd "$PACKAGE_DIR"
     rm -rf "$WORK_DIR" "$PKG_ROOT" "$CONTROL_DIR"
@@ -233,22 +272,24 @@ EOF
     print_info "IPK 路径: $PACKAGE_DIR/$IPK_NAME"
     
     print_info "验证 IPK 包格式..."
-    if file "$IPK_NAME" | grep -q "ar archive"; then
-        print_info "  ✓ ar 格式正确"
+    local file_output
+    file_output="$(file "$IPK_NAME")"
+    if echo "$file_output" | grep -q "Debian binary package"; then
+        print_info "  ✓ 格式正确 ($file_output)"
     else
         print_error "  ✗ ar 格式错误"
-        file "$IPK_NAME"
+        echo "$file_output"
         exit 1
     fi
     
     local files=($(ar t "$IPK_NAME"))
     print_info "  文件列表: ${files[@]}"
-    if [ "${files[0]}" = "debian-binary" ] && [ "${files[1]}" = "data.tar.gz" ] && [ "${files[2]}" = "control.tar.gz" ]; then
+    if [ "${files[0]}" = "debian-binary" ] && [ "${files[1]}" = "control.tar.gz" ] && [ "${files[2]}" = "data.tar.gz" ]; then
         print_info "  ✓ 文件顺序正确"
     else
         print_error "  ✗ 文件顺序错误"
         print_error "  当前顺序: ${files[@]}"
-        print_error "  正确顺序: debian-binary data.tar.gz control.tar.gz"
+        print_error "  正确顺序: debian-binary control.tar.gz data.tar.gz"
         exit 1
     fi
     
