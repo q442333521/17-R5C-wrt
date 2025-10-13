@@ -10,12 +10,11 @@ import time
 
 try:
     from pymodbus.client import ModbusTcpClient
-    from pymodbus.constants import Endian
-    from pymodbus.payload import BinaryPayloadDecoder
-except ImportError:
-    print("ERROR: pymodbus not installed")
+except ImportError as exc:
+    print("ERROR: pymodbus not installed or incompatible")
+    print(f"Details: {exc}")
     print("Please install it:")
-    print("  pip3 install pymodbus")
+    print('  pip3 install "pymodbus>=2.5"')
     sys.exit(1)
 
 def read_thickness_data(host='localhost', port=502):
@@ -35,7 +34,14 @@ def read_thickness_data(host='localhost', port=502):
     try:
         while True:
             # 读取保持寄存器 40001-40008 (Modbus 地址从 0 开始)
-            result = client.read_holding_registers(0, 8, slave=1)
+            try:
+                result = client.read_holding_registers(0, count=8, device_id=1)
+            except TypeError:
+                try:
+                    result = client.read_holding_registers(0, 8, unit=1)
+                except TypeError:
+                    # 兼容最旧版本的 pymodbus
+                    result = client.read_holding_registers(0, 8, slave=1)
             
             if result.isError():
                 print(f"ERROR: {result}")

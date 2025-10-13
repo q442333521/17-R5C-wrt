@@ -31,6 +31,11 @@ BUILD_DIR="/tmp/open62541-build-$$"  # 使用进程ID避免冲突
 # 下载目录
 DOWNLOAD_DIR="/tmp/open62541-download"
 
+# ua-nodeset 仓库配置（FULL 命名空间需要）
+NODESET_BRANCH="v1.04"
+NODESET_TARBALL="ua-nodeset-${NODESET_BRANCH}.tar.gz"
+NODESET_DOWNLOAD_URL="https://github.com/OPCFoundation/UA-Nodeset/archive/refs/heads/${NODESET_BRANCH}.tar.gz"
+
 # 是否清理临时文件（1=清理，0=保留用于调试）
 CLEANUP_TEMP=1
 
@@ -218,6 +223,51 @@ print_info "解压源码包..."
 tar -xzf "$DOWNLOAD_DIR/$TARBALL" --strip-components=1
 
 print_success "源码解压完成"
+
+# 确保 ua-nodeset 子模块内容可用（FULL 命名空间构建所需）
+if [ ! -f "deps/ua-nodeset/Schema/Opc.Ua.NodeSet2.xml" ]; then
+    print_warning "未检测到 ua-nodeset 数据，尝试下载官方节点集..."
+
+    mkdir -p "$DOWNLOAD_DIR"
+    if [ ! -f "$DOWNLOAD_DIR/$NODESET_TARBALL" ]; then
+        print_info "下载 ua-nodeset (${NODESET_BRANCH})..."
+        if wget --progress=bar:force "$NODESET_DOWNLOAD_URL" -O "$DOWNLOAD_DIR/$NODESET_TARBALL" 2>&1 | \
+            grep --line-buffered "%" | \
+            sed -u -e "s,\.,,g" | \
+            awk '{printf("\r  下载进度: %s", $2)}'; then
+            echo ""
+            print_success "ua-nodeset 下载完成"
+        else
+            echo ""
+            print_error "ua-nodeset 下载失败，请检查网络连接"
+            exit 1
+        fi
+    else
+        print_info "ua-nodeset 压缩包已存在，跳过下载"
+    fi
+
+    print_info "解压 ua-nodeset..."
+    NODESET_TEMP_DIR=$(mktemp -d)
+    if tar -xzf "$DOWNLOAD_DIR/$NODESET_TARBALL" -C "$NODESET_TEMP_DIR"; then
+        EXTRACTED_NODESET_DIR=$(find "$NODESET_TEMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -z "$EXTRACTED_NODESET_DIR" ]; then
+            print_error "未找到解压后的 ua-nodeset 目录"
+            rm -rf "$NODESET_TEMP_DIR"
+            exit 1
+        fi
+
+        rm -rf deps/ua-nodeset
+        mv "$EXTRACTED_NODESET_DIR" deps/ua-nodeset
+        rm -rf "$NODESET_TEMP_DIR"
+        print_success "ua-nodeset 数据准备完成"
+    else
+        rm -rf "$NODESET_TEMP_DIR"
+        print_error "ua-nodeset 解压失败"
+        exit 1
+    fi
+else
+    print_info "ua-nodeset 数据已存在，跳过获取"
+fi
 
 # =============================================================================
 # 配置 CMake
