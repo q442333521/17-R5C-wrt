@@ -9,7 +9,7 @@ CONF_FILE="/opt/gw/conf/config.json"
 LOG_DIR="/opt/gw/logs"
 PID_DIR="/tmp/gw-pids"
 
-# 颜色定义（如果终端支持）
+# 颜色定义
 if [ -t 1 ]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'
@@ -39,6 +39,9 @@ if [ ! -f "$CONF_FILE" ]; then
     exit 1
 fi
 
+
+
+
 # 启动单个服务
 start_service() {
     local name=$1
@@ -48,6 +51,8 @@ start_service() {
         echo "${YELLOW}[跳过]${NC} $name - 二进制文件不存在或无执行权限"
         return 1
     fi
+    
+
     
     # 检查是否已经在运行
     if [ -f "$PID_DIR/$name.pid" ]; then
@@ -84,19 +89,35 @@ start_service() {
 echo "${BLUE}开始启动服务...${NC}"
 echo ""
 
-# 1. 启动 rs485d (数据采集，必须最先启动)
-start_service "rs485d"
-sleep 2
+# 记录成功启动的服务
+SUCCESS_COUNT=0
 
-# 2. 启动协议守护进程（可以并行）
-start_service "modbusd" &
-start_service "s7d" &
-start_service "opcuad" &
-wait
+# 1. 启动 rs485d (数据采集，必须最先启动)
+if start_service "rs485d"; then
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+    sleep 2
+fi
+
+# 2. 启动协议守护进程
+if start_service "modbusd"; then
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+fi
+
+sleep 1
+
+# if start_service "s7d"; then
+#     SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+# fi
+
+# if start_service "opcuad"; then
+#     SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+# fi
 
 # 3. 最后启动 webcfg
 sleep 1
-start_service "webcfg"
+if start_service "webcfg"; then
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+fi
 
 echo ""
 echo "${BLUE}=========================================${NC}"
@@ -105,7 +126,7 @@ echo "${BLUE}=========================================${NC}"
 echo ""
 
 # 显示运行状态
-echo "${GREEN}运行中的服务:${NC}"
+echo "${GREEN}运行中的服务 ($SUCCESS_COUNT):${NC}"
 for name in rs485d modbusd webcfg s7d opcuad; do
     if [ -f "$PID_DIR/$name.pid" ]; then
         pid=$(cat "$PID_DIR/$name.pid")
@@ -116,11 +137,20 @@ for name in rs485d modbusd webcfg s7d opcuad; do
 done
 
 echo ""
+if [ $SUCCESS_COUNT -eq 0 ]; then
+    echo "${RED}错误: 没有服务成功启动！${NC}"
+    exit 1
+elif [ $SUCCESS_COUNT -lt 3 ]; then
+    echo "${YELLOW}警告: 部分服务未启动，但核心服务可能正常运行${NC}"
+fi
+
+echo ""
 echo "${BLUE}访问地址:${NC}"
-echo "  Web 界面:  http://$(uci get network.lan.ipaddr 2>/dev/null || echo 'localhost'):8080"
-echo "  Modbus TCP: $(uci get network.lan.ipaddr 2>/dev/null || echo 'localhost'):1502"
+LAN_IP=$(uci get network.lan.ipaddr 2>/dev/null || echo "localhost")
+echo "  Web 界面:  http://$LAN_IP:8080"
+echo "  Modbus TCP: $LAN_IP:1502"
 echo ""
 echo "${YELLOW}提示:${NC}"
 echo "  查看日志: tail -f $LOG_DIR/*.log"
-echo "  停止服务: /opt/gw/stop.sh"
+echo "  停止服务: $0/../stop.sh"
 echo ""
