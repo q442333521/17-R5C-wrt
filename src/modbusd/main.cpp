@@ -10,6 +10,7 @@
 #include <cstring>
 #include <atomic>
 #include <filesystem>
+#include <unistd.h>
 
 // 全局运行标志
 volatile sig_atomic_t g_running = 1;
