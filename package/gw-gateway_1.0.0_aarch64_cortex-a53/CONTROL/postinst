@@ -1,0 +1,14 @@
+#!/bin/sh
+# 创建运行时目录
+mkdir -p /opt/gw/logs /opt/gw/data
+
+# 设置权限
+chmod +x /opt/gw/bin/*
+
+# 启用并启动服务
+/etc/init.d/gw-gateway enable
+/etc/init.d/gw-gateway start
+
+echo "Gateway 安装完成"
+echo "访问 Web 界面: http://$(uci get network.lan.ipaddr):8080"
+exit 0

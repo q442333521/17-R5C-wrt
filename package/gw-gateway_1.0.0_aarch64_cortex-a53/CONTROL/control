@@ -1,0 +1,12 @@
+Package: gw-gateway
+Version: 1.0.0
+Architecture: aarch64_cortex-a53
+Maintainer: Gateway Project <project@example.com>
+Section: net
+Priority: optional
+Description: Industrial Gateway for RS485/Modbus/S7/OPC-UA
+ 工业网关系统,支持:
+ - RS-485 数据采集
+ - Modbus TCP 服务器
+ - Web 配置界面
+ - 高性能无锁数据传输

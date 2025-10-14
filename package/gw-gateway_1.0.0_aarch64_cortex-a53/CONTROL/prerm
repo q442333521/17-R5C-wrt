@@ -1,0 +1,5 @@
+#!/bin/sh
+# 停止服务
+/etc/init.d/gw-gateway stop
+/etc/init.d/gw-gateway disable
+exit 0

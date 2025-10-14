@@ -1,0 +1,58 @@
+#!/bin/sh /etc/rc.common
+# Gateway 服务启动脚本（OpenWrt procd 格式）
+
+USE_PROCD=1
+
+START=99
+STOP=10
+
+PROG_DIR="/opt/gw/bin"
+CONF_FILE="/opt/gw/conf/config.json"
+LOG_DIR="/opt/gw/logs"
+
+start_service() {
+    # 创建必要的目录
+    mkdir -p "$LOG_DIR"
+    mkdir -p "/opt/gw/data"
+    
+    # 启动 rs485d (RS-485 数据采集服务)
+    procd_open_instance rs485d
+    procd_set_param command "$PROG_DIR/rs485d" "$CONF_FILE"
+    procd_set_param respawn 3600 5 5  # 重启策略: 阈值 最小间隔 最大重启次数
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param user root
+    procd_close_instance
+    
+    # 等待 rs485d 启动完成
+    sleep 2
+    
+    # 启动 modbusd (Modbus TCP 服务器)
+    procd_open_instance modbusd
+    procd_set_param command "$PROG_DIR/modbusd" "$CONF_FILE"
+    procd_set_param respawn 3600 5 5
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param user root
+    procd_close_instance
+    
+    # 启动 webcfg (Web 配置界面)
+    procd_open_instance webcfg
+    procd_set_param command "$PROG_DIR/webcfg" "$CONF_FILE"
+    procd_set_param respawn 3600 5 5
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param user root
+    procd_close_instance
+}
+
+stop_service() {
+    # procd 会自动处理进程停止
+    killall webcfg 2>/dev/null
+    killall modbusd 2>/dev/null
+    killall rs485d 2>/dev/null
+}
+
+service_triggers() {
+    procd_add_reload_trigger "gw-gateway"
+}
