@@ -17,7 +17,7 @@ except ImportError as exc:
     print('  pip3 install "pymodbus>=2.5"')
     sys.exit(1)
 
-def read_thickness_data(host='localhost', port=502):
+def read_thickness_data(host='192.168.2.1', port=1502):
     """读取厚度数据"""
     
     print(f"Connecting to {host}:{port}...")
@@ -85,8 +85,8 @@ def read_thickness_data(host='localhost', port=502):
 
 def main():
     """主函数"""
-    host = 'localhost'
-    port = 502
+    host = '192.168.2.1'
+    port = 1502
     
     if len(sys.argv) > 1:
         host = sys.argv[1]
