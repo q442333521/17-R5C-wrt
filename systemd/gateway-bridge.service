@@ -1,0 +1,25 @@
+[Unit]
+Description=Industrial Protocol Gateway Bridge
+Documentation=https://github.com/q442333521/17-R5C-wrt
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/gateway-bridge
+ExecStart=/usr/local/bin/gateway-bridge --config /etc/gateway-bridge/gateway_config.json
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
