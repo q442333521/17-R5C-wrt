@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "gateway": {
+    "name": "Protocol-Gateway-R5S",
+    "description": "Industrial Protocol Gateway - RTU to TCP/S7",
+    "mode": "modbus_tcp"
+  },
+  "modbus_rtu": {
+    "device": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "parity": "N",
+    "data_bits": 8,
+    "stop_bits": 1,
+    "timeout_ms": 1000,
+    "retry_count": 3
+  },
+  "modbus_tcp": {
+    "enabled": true,
+    "listen_ip": "0.0.0.0",
+    "port": 502,
+    "max_connections": 32
+  },
+  "s7": {
+    "enabled": false,
+    "plc_ip": "192.168.1.10",
+    "rack": 0,
+    "slot": 1,
+    "connection_timeout_ms": 2000
+  },
+  "web_server": {
+    "enabled": true,
+    "port": 8080,
+    "auth_enabled": false,
+    "username": "admin",
+    "password_hash": ""
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "/tmp/gw-test/logs/gateway-bridge.log",
+    "max_size_mb": 10,
+    "max_files": 5
+  },
+  "mapping_rules": [
+    {
+      "rule_id": "rule-thickness-to-tcp",
+      "description": "测厚仪数据 -> Modbus TCP",
+      "enabled": true,
+      "source": {
+        "protocol": "modbus_rtu",
+        "slave_id": 1,
+        "function_code": 3,
+        "start_address": 0,
+        "register_count": 2,
+        "data_type": "float",
+        "byte_order": "big_endian",
+        "poll_interval_ms": 100,
+        "timeout_ms": 1000,
+        "retry_count": 3
+      },
+      "destination": {
+        "protocol": "modbus_tcp",
+        "slave_id": 1,
+        "function_code": 16,
+        "start_address": 100,
+        "data_type": "float",
+        "byte_order": "big_endian"
+      },
+      "transform": {
+        "operation": "scale",
+        "scale": 1.0,
+        "offset": 0.0,
+        "min_value": 0.0,
+        "max_value": 100.0,
+        "clamp_enabled": true
+      }
+    },
+    {
+      "rule_id": "rule-thickness-to-s7",
+      "description": "测厚仪数据 -> S7 PLC DB1.DBD0",
+      "enabled": false,
+      "source": {
+        "protocol": "modbus_rtu",
+        "slave_id": 1,
+        "function_code": 3,
+        "start_address": 0,
+        "register_count": 2,
+        "data_type": "float",
+        "byte_order": "big_endian",
+        "poll_interval_ms": 100,
+        "timeout_ms": 1000,
+        "retry_count": 3
+      },
+      "destination": {
+        "protocol": "s7",
+        "db_number": 1,
+        "start_byte": 0,
+        "bit_offset": 0,
+        "data_type": "float",
+        "byte_order": "big_endian"
+      },
+      "transform": {
+        "operation": "expression",
+        "expression": "x * 0.001",
+        "scale": 1.0,
+        "offset": 0.0,
+        "min_value": 0.0,
+        "max_value": 10.0,
+        "clamp_enabled": true
+      }
+    }
+  ]
+}
